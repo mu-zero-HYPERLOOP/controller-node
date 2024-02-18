@@ -1,5 +1,5 @@
 #include "gamepad.h"
-#include "gamepad/Gamepad_private.h"
+#include "internal_events.h"
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
