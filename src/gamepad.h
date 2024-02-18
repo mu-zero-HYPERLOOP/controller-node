@@ -1,112 +1,80 @@
-#ifndef __GAMEPAD_H__
-#define __GAMEPAD_H__
+#ifndef GAMEPAD_H
+#define GAMEPAD_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+// Use standard boolean types for C99 and later, ensure compatibility with older MSVC versions
 #if defined(_MSC_VER) && (_MSC_VER <= 1600)
-#define bool int
+typedef int bool;
 #define true 1
 #define false 0
 #else
 #include <stdbool.h>
 #endif
 
-struct Gamepad_device {
-	// Unique device identifier for application session, starting at 0 for the first device attached and
-	// incrementing by 1 for each additional device. If a device is removed and subsequently reattached
-	// during the same application session, it will have a new deviceID.
-	unsigned int deviceID;
-	
-	// Human-readable device name
-	const char * description;
-	
-	// USB vendor/product IDs as returned by the driver. Can be used to determine the particular model of device represented.
-	int vendorID;
-	int productID;
-	
-	// Number of axis elements belonging to the device
-	unsigned int numAxes;
-	
-	// Number of button elements belonging to the device
-	unsigned int numButtons;
-	
-	// Array[numAxes] of values representing the current state of each axis, in the range [-1..1]
-	float * axisStates;
-	
-	// Array[numButtons] of values representing the current state of each button
-	bool * buttonStates;
-	
-	// Platform-specific device data storage. Don't touch unless you know what you're doing and don't
-	// mind your code breaking in future versions of this library.
-	void * privateData;
-};
+// Structure representing a gamepad device
+typedef struct Gamepad_device {
+    // Unique identifier for the device within the application session. It starts at 0 for the first attached device
+    // and increments by 1 for each additional device. If a device is removed and then reattached, it receives a new ID.
+    unsigned int deviceID;
 
-/* Initializes gamepad library and detects initial devices. Call this before any other Gamepad_*()
-   function, other than callback registration functions. If you want to receive deviceAttachFunc
-   callbacks from devices detected in Gamepad_init(), you must call Gamepad_deviceAttachFunc()
-   before calling Gamepad_init().
-   
-   This function must be called from the same thread that will be calling Gamepad_processEvents()
-   and Gamepad_detectDevices(). */
+    // A human-friendly name for the device
+    const char *description;
+
+    // USB vendor and product IDs, useful for identifying specific models
+    int vendorID;
+    int productID;
+
+    // Count of axis and button elements on the device
+    unsigned int numAxes;
+    unsigned int numButtons;
+
+    // Arrays storing the current state of each axis (range -1 to 1) and button (pressed or not)
+    float *axisStates;
+    bool *buttonStates;
+
+    // Platform-specific storage for device data. Direct manipulation is not recommended.
+    void *privateData;
+} Gamepad_device;
+
+// Initializes the gamepad library and detects initial devices. This must be the first Gamepad_* function called,
+// except for callback registration functions. To receive attach callbacks for initial devices, register before initializing.
 void Gamepad_init();
 
-/* Tears down all data structures created by the gamepad library and releases any memory that was
-   allocated. It is not necessary to call this function at application termination, but it's
-   provided in case you want to free memory associated with gamepads at some earlier time. */
+// Cleans up resources allocated by the gamepad library. Calling this function is optional at application termination,
+// but useful for earlier resource release.
 void Gamepad_shutdown();
 
-/* Returns the number of currently attached gamepad devices. */
+// Returns the count of currently attached gamepad devices.
 unsigned int Gamepad_numDevices();
 
-/* Returns the specified Gamepad_device struct, or NULL if deviceIndex is out of bounds. */
-struct Gamepad_device * Gamepad_deviceAtIndex(unsigned int deviceIndex);
+// Retrieves a pointer to a gamepad device struct by index, or NULL if the index is invalid.
+Gamepad_device *Gamepad_deviceAtIndex(unsigned int deviceIndex);
 
-/* Polls for any devices that have been attached since the last call to Gamepad_detectDevices() or
-   Gamepad_init(). If any new devices are found, the callback registered with
-   Gamepad_deviceAttachFunc() (if any) will be called once per newly detected device.
-   
-   Note that depending on implementation, you may receive button and axis event callbacks for
-   devices that have not yet been detected with Gamepad_detectDevices(). You can safely ignore
-   these events, but be aware that your callbacks might receive a device ID that hasn't been seen
-   by your deviceAttachFunc. */
+// Detects newly attached devices since the last detection call, triggering attach callbacks for any found.
 void Gamepad_detectDevices();
 
-/* Reads pending input from all attached devices and calls the appropriate input callbacks, if any
-   have been registered. */
+// Processes input from all attached devices, triggering registered input callbacks.
 void Gamepad_processEvents();
 
-/* Registers a function to be called whenever a device is attached. The specified function will be
-   called only during calls to Gamepad_init() and Gamepad_detectDevices(), in the thread from
-   which those functions were called. Calling this function with a NULL argument will stop any
-   previously registered callback from being called subsequently. */
-void Gamepad_deviceAttachFunc(void (* callback)(struct Gamepad_device * device, void * context), void * context);
+// Sets a callback for device attachment events, occurring during initialization and device detection.
+void Gamepad_deviceAttachFunc(void (*callback)(Gamepad_device *device, void *context), void *context);
 
-/* Registers a function to be called whenever a device is detached. The specified function can be
-   called at any time, and will not necessarily be called from the main thread. Calling this
-   function with a NULL argument will stop any previously registered callback from being called
-   subsequently. */
-void Gamepad_deviceRemoveFunc(void (* callback)(struct Gamepad_device * device, void * context), void * context);
+// Sets a callback for device detachment events, which may be triggered at any time.
+void Gamepad_deviceRemoveFunc(void (*callback)(Gamepad_device *device, void *context), void *context);
 
-/* Registers a function to be called whenever a button on any attached device is pressed. The
-   specified function will be called only during calls to Gamepad_processEvents(), in the
-   thread from which Gamepad_processEvents() was called. Calling this function with a NULL
-   argument will stop any previously registered callback from being called subsequently.  */
-void Gamepad_buttonDownFunc(void (* callback)(struct Gamepad_device * device, unsigned int buttonID, double timestamp, void * context), void * context);
+// Sets a callback for button press events on any device, called during event processing.
+void Gamepad_buttonDownFunc(void (*callback)(Gamepad_device *device, unsigned int buttonID, double timestamp, void *context), void *context);
 
-/* Registers a function to be called whenever a button on any attached device is released. The
-   specified function will be called only during calls to Gamepad_processEvents(), in the
-   thread from which Gamepad_processEvents() was called. Calling this function with a NULL
-   argument will stop any previously registered callback from being called subsequently.  */
-void Gamepad_buttonUpFunc(void (* callback)(struct Gamepad_device * device, unsigned int buttonID, double timestamp, void * context), void * context);
+// Sets a callback for button release events on any device, called during event processing.
+void Gamepad_buttonUpFunc(void (*callback)(Gamepad_device *device, unsigned int buttonID, double timestamp, void *context), void *context);
 
-/* Registers a function to be called whenever an axis on any attached device is moved. The
-   specified function will be called only during calls to Gamepad_processEvents(), in the
-   thread from which Gamepad_processEvents() was called. Calling this function with a NULL
-   argument will stop any previously registered callback from being called subsequently.  */
-void Gamepad_axisMoveFunc(void (* callback)(struct Gamepad_device * device, unsigned int axisID, float value, float lastValue, double timestamp, void * context), void * context);
+// Sets a callback for axis movement events on any device, called during event processing.
+void Gamepad_axisMoveFunc(void (*callback)(Gamepad_device *device, unsigned int axisID, float value, float lastValue, double timestamp, void *context), void *context);
 
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif // GAMEPAD_H

@@ -1,54 +1,46 @@
-#ifndef __INTERNAL_EVENTS_H__
-#define __INTERNAL_EVENTS_H__
+#ifndef INTERNAL_EVENTS_H
+#define INTERNAL_EVENTS_H
 
-enum Gamepad_eventType {
+#include "gamepad.h" // Ensure Gamepad_device is known
+
+// Enumerates types of gamepad events for clear event management
+typedef enum {
 	GAMEPAD_EVENT_DEVICE_ATTACHED,
 	GAMEPAD_EVENT_DEVICE_REMOVED,
 	GAMEPAD_EVENT_BUTTON_DOWN,
 	GAMEPAD_EVENT_BUTTON_UP,
 	GAMEPAD_EVENT_AXIS_MOVED
-};
+} Gamepad_eventType;
 
-struct Gamepad_buttonEvent {
-	// Device that generated the event
-	struct Gamepad_device * device;
-	
-	// Relative time of the event, in seconds
-	double timestamp;
-	
-	// Button being pushed or released
-	unsigned int buttonID;
-	
-	// True if button is down
-	bool down;
-};
+// Structure to represent button events with detailed information
+typedef struct {
+	struct Gamepad_device *device; // The device that generated the event
+	double timestamp;              // Event time in seconds since the program started
+	unsigned int buttonID;         // ID of the button involved in the event
+	bool down;                     // State of the button: true if pressed
+} Gamepad_buttonEvent;
 
-struct Gamepad_axisEvent {
-	// Device that generated the event
-	struct Gamepad_device * device;
-	
-	// Relative time of the event, in seconds
-	double timestamp;
-	
-	// Axis being moved
-	unsigned int axisID;
-	
-	// Axis position value, in the range [-1..1]
-	float value;
-	
-	// Previous axis position value, in the range [-1..1]
-	float lastValue;
-};
+// Structure to represent axis movement events with precise values
+typedef struct {
+	struct Gamepad_device *device; // The device that generated the event
+	double timestamp;              // Event time in seconds since the program started
+	unsigned int axisID;           // ID of the axis involved in the event
+	float value;                   // Current axis position in the range [-1..1]
+	float lastValue;               // Previous axis position in the range [-1..1]
+} Gamepad_axisEvent;
 
-extern void (* Gamepad_deviceAttachCallback)(struct Gamepad_device * device, void * context);
-extern void (* Gamepad_deviceRemoveCallback)(struct Gamepad_device * device, void * context);
-extern void (* Gamepad_buttonDownCallback)(struct Gamepad_device * device, unsigned int buttonID, double timestamp, void * context);
-extern void (* Gamepad_buttonUpCallback)(struct Gamepad_device * device, unsigned int buttonID, double timestamp, void * context);
-extern void (* Gamepad_axisMoveCallback)(struct Gamepad_device * device, unsigned int axisID, float value, float lastValue, double timestamp, void * context);
-extern void * Gamepad_deviceAttachContext;
-extern void * Gamepad_deviceRemoveContext;
-extern void * Gamepad_buttonDownContext;
-extern void * Gamepad_buttonUpContext;
-extern void * Gamepad_axisMoveContext;
+// Declarations for callback function pointers with context support
+extern void (*Gamepad_deviceAttachCallback)(struct Gamepad_device *device, void *context);
+extern void (*Gamepad_deviceRemoveCallback)(struct Gamepad_device *device, void *context);
+extern void (*Gamepad_buttonDownCallback)(struct Gamepad_device *device, unsigned int buttonID, double timestamp, void *context);
+extern void (*Gamepad_buttonUpCallback)(struct Gamepad_device *device, unsigned int buttonID, double timestamp, void *context);
+extern void (*Gamepad_axisMoveCallback)(struct Gamepad_device *device, unsigned int axisID, float value, float lastValue, double timestamp, void *context);
 
-#endif
+// Context pointers for each type of event callback
+extern void *Gamepad_deviceAttachContext;
+extern void *Gamepad_deviceRemoveContext;
+extern void *Gamepad_buttonDownContext;
+extern void *Gamepad_buttonUpContext;
+extern void *Gamepad_axisMoveContext;
+
+#endif // INTERNAL_EVENTS_H
